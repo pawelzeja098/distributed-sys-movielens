@@ -29,31 +29,30 @@ graph TD
 
 ```mermaid
 graph TD
-    %% Definicja stylów dla czytelności
-    classDef storage fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef batch fill:#ff9,stroke:#333,stroke-width:2px;
-    classDef online fill:#9f9,stroke:#333,stroke-width:2px;
-    classDef client fill:#ddd,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5;
+    %% Stylizacja
+    classDef storage fill:#f4f4f4,stroke:#666,stroke-width:2px;
+    classDef process fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef interface fill:#fff9c4,stroke:#fbc02d,stroke-width:2px;
 
-    subgraph "1. Faza BATCH (Przygotowanie Danych)"
-        A[(Surowe Dane: MovieLens)] -->|Wczytanie| B(Ray Data: Czyszczenie i ETL)
-        B -->|Trening Modelu| C(Ray Train: XGBoost)
-        B -->|Generowanie Wektorów| D(Ray Train: Embeddingi)
+    subgraph "PROCES PRZYGOTOWANIA (Offline)"
+        A[(Źródła Danych)] --> B[Przetwarzanie i Inżynieria Cech]:::process
+        B --> C[Trening Modelu Rankingu]:::process
+        B --> D[Generowanie Reprezentacji Wektorowych]:::process
     end
 
-    subgraph "CENTRALNA BAZA DANYCH"
-        E[(PostgreSQL + pgvector)]:::storage
-        F[(Model Store: Plik XGBoost)]:::storage
+    subgraph "WARSTWA SKŁADOWANIA"
+        E[(Baza Wektorowa)]:::storage
+        F[(Repozytorium Modeli)]:::storage
     end
 
-    subgraph "2. Faza ONLINE (Obsługa Użytkownika - Na żywo)"
-        G[Klient / Aplikacja]:::client <-->|Zapytanie HTTP| H[Ray Serve: API Endpoint]:::online
-        H <-->|1. Pobierz podobne wektory| E
-        H <-->|2. Posortuj wyniki | I[Silnik XGBoost]:::online
-        F -.->|Ładuje model| I
+    subgraph "SERWIS REKOMENDACJI (Online)"
+        G[Użytkownik] <--> H[API Serwisu]:::interface
+        H <--> |Pobranie kandydatów| E
+        H <--> |Ranking wyników| I[Moduł Wnioskowania]:::process
+        F -.-> |Ładowanie parametrów| I
     end
 
-    %% Strzałki zapisu z fazy Batch do Bazy
-    C -->|Zapisz Model| F
-    D -->|Zapisz Tytuły i Wektory| E
+    %% Zapisywanie wyników
+    C --> F
+    D --> E
 ```
