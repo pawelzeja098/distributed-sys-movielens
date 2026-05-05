@@ -4,19 +4,11 @@ def perform_etl():
     # 1. Inicjalizacja klastra Ray (uruchomi się lokalnie wykorzystując wszystkie rdzenie)
     ray.init(ignore_reinit_error=True)
     
-    print("Rozpoczynam proces ETL z Ray Data...")
 
-    # ==========================================
-    # EXTRACT (Pobieranie)
-    # ==========================================
-    # Ray Data czyta pliki z dysku. Nie ładuje od razu całości do pamięci RAM.
     print("Wczytywanie plików CSV...")
-    ratings = ray.data.read_csv("data/ratings.csv")
-    movies = ray.data.read_csv("data/movies.csv")
+    ratings = ray.data.read_csv("data/ml-latest-small/ratings.csv")
+    movies = ray.data.read_csv("data/ml-latest-small/movies.csv")
 
-    # ==========================================
-    # TRANSFORM (Czyszczenie i transformacja)
-    # ==========================================
     print("Czyszczenie danych...")
     
     # Filmy: Odrzucamy wiersze, w których gatunek to "(no genres listed)"
@@ -31,12 +23,9 @@ def perform_etl():
         .filter(lambda row: row["rating"] is not None)
     )
 
-    # Możesz też np. znormalizować oceny (opcjonalnie) za pomocą map:
+    # Można też np. znormalizować oceny  za pomocą map:
     # ratings_cleaned = ratings_cleaned.map(lambda row: {**row, "rating_normalized": row["rating"] / 5.0})
 
-    # ==========================================
-    # LOAD (Zapisywanie)
-    # ==========================================
     # Zapisujemy do formatu Parquet (świetnie kompresuje dane i wspiera typowanie)
     print("Zapisywanie przetworzonych danych do formatu Parquet...")
     
