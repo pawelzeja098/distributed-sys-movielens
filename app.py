@@ -17,7 +17,7 @@ import pandas as pd
 import ray
 import ray.data as _ray_data
 from flask import Flask, flash, redirect, render_template, request, url_for
-from recommend_online import (
+from recommend import (
     MIN_RATINGS,
     RATINGS_PARQUET,
     compute_popular_movies,
