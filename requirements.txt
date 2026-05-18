@@ -3,3 +3,4 @@ pyarrow
 pandas
 scikit-learn
 flask
+sentence-transformers

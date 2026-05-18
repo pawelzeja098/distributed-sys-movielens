@@ -95,9 +95,16 @@
             {{ loop.index }}
           </span>
 
-          <!-- Tytuł + pasek dopasowania -->
+          <!-- Tytuł + gatunki + pasek dopasowania -->
           <div class="flex-grow-1 min-w-0">
             <div class="fw-semibold text-truncate">{{ rec.title }}</div>
+            {% if rec.genres %}
+            <div class="mb-1">
+              {% for g in rec.genres.split('|') %}
+              <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle" style="font-size:.6rem">{{ g }}</span>
+              {% endfor %}
+            </div>
+            {% endif %}
             <div class="d-flex align-items-center gap-2 mt-1">
               <div class="progress flex-grow-1 score-bar">
                 <div class="progress-bar {{ 'bg-warning' if is_cold_start else 'bg-success' }}"
@@ -146,7 +153,16 @@
         <tbody>
           {% for m in rated_movies %}
           <tr>
-            <td class="fw-medium">{{ m.title }}</td>
+            <td>
+              <div class="fw-medium">{{ m.title }}</div>
+              {% if m.genres %}
+              <div class="mt-1">
+                {% for g in m.genres.split('|') %}
+                <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle" style="font-size:.6rem">{{ g }}</span>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </td>
             <td>
               <span class="star-rating text-warning">
                 {% set full = (m.rating | int) %}

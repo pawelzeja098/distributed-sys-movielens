@@ -13,6 +13,7 @@ import sys
 # (ważne – ścieżki do data/ w recommend_online są względne)
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+import pandas as pd
 import ray
 import ray.data as _ray_data
 from flask import Flask, flash, redirect, render_template, request, url_for
@@ -38,6 +39,11 @@ _movies_features = init_system()
 print("► Wczytywanie ocen do obliczenia popularnych filmów…")
 _ratings_df = _ray_data.read_parquet(RATINGS_PARQUET).to_pandas()
 _popular_movies = compute_popular_movies(_ratings_df, _movies_features, top_n=20)
+_movies_genres: dict[int, str] = (
+    pd.read_csv("data/ml-latest-small/movies.csv", usecols=["movieId", "genres"])
+    .set_index("movieId")["genres"]
+    .to_dict()
+)
 print(f"► System gotowy. Popularne filmy: {len(_popular_movies)} pozycji.\n")
 
 
@@ -96,13 +102,18 @@ def user_page(user_id: int):
         .sort_values("title")
     )
 
+    def _add_genres(records: list[dict]) -> list[dict]:
+        for r in records:
+            r["genres"] = _movies_genres.get(r["movieId"], "")
+        return records
+
     return render_template(
         "user.html",
         user_id=user_id,
         stats=stats,
         is_cold_start=is_cold_start,
-        recommendations=recs.to_dict("records"),
-        rated_movies=rated.to_dict("records"),
+        recommendations=_add_genres(recs.to_dict("records")),
+        rated_movies=_add_genres(rated.to_dict("records")),
         unrated_movies=unrated.to_dict("records"),
     )
 
