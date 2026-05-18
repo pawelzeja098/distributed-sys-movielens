@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}MovieLens Recommender{% endblock %}</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <!-- Select2 + Bootstrap 5 theme -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+  <style>
+    body { background: #f4f6fb; }
+    .navbar-brand { font-weight: 700; letter-spacing: .5px; }
+    .score-bar { height: 6px; border-radius: 3px; }
+    .card-hover { transition: transform .15s, box-shadow .15s; }
+    .card-hover:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.12) !important; }
+    .star-rating .bi { font-size: 1rem; }
+    /* spinner overlay */
+    #loadingOverlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,.45);
+      align-items: center; justify-content: center;
+    }
+    #loadingOverlay.show { display: flex; }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-dark bg-dark shadow-sm">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <i class="bi bi-film me-2"></i>MovieLens Recommender
+    </a>
+    <span class="text-secondary small">Decision Tree + Ray</span>
+  </div>
+</nav>
+
+<!-- Loading overlay (pokazuje się podczas douczania) -->
+<div id="loadingOverlay">
+  <div class="text-center text-white">
+    <div class="spinner-border mb-3" style="width:3rem;height:3rem"></div>
+    <div class="fs-5 fw-semibold">Douczam model…</div>
+    <div class="text-white-50 small mt-1">Proszę czekać</div>
+  </div>
+</div>
+
+<div class="container my-4">
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+          <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+          {{ message | safe }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- jQuery (wymagane przez Select2) -->
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<!-- Select2 -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+  // Pokaż overlay przy każdym submit formularza oceny
+  document.querySelectorAll('form.rate-form').forEach(f => {
+    f.addEventListener('submit', () => {
+      document.getElementById('loadingOverlay').classList.add('show');
+    });
+  });
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}Użytkownik {{ user_id }} – MovieLens{% endblock %}
+
+{% block content %}
+
+<!-- Nagłówek strony -->
+<div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+  <a href="/" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left"></i> Wróć
+  </a>
+  <h2 class="fw-bold mb-0">
+    <i class="bi bi-person-circle text-primary me-1"></i> Użytkownik {{ user_id }}
+  </h2>
+  <div class="d-flex gap-2">
+    <span class="badge bg-secondary fs-6 fw-normal">
+      <i class="bi bi-bookmark-star me-1"></i>{{ stats.rated_count }} ocenionych
+    </span>
+    <span class="badge bg-success fs-6 fw-normal">
+      <i class="bi bi-hand-thumbs-up me-1"></i>{{ stats.liked_count }} lubianych
+    </span>
+    <span class="badge bg-primary fs-6 fw-normal">
+      <i class="bi bi-stars me-1"></i>{{ stats.rec_count }} propozycji
+    </span>
+  </div>
+</div>
+
+<!-- Cold-start: baner z postępem budowania modelu -->
+{% if is_cold_start %}
+<div class="alert alert-info border-0 shadow-sm mb-3 py-3">
+  <div class="d-flex align-items-start gap-3">
+    <i class="bi bi-robot fs-3 text-info flex-shrink-0"></i>
+    <div class="flex-grow-1">
+      <div class="fw-semibold">Budujemy Twój profil preferencji — tryb cold-start</div>
+      <div class="text-muted small mb-2">
+        {% if stats.rated_count == 0 %}
+          Oceń co najmniej <strong>{{ stats.ratings_needed }}</strong> filmów, żeby model mógł się nauczyć Twoich gustów.
+          Na razie pokazujemy Ci najlepiej oceniane filmy przez społeczność.
+        {% else %}
+          Jeszcze <strong>{{ stats.ratings_needed - stats.ratings_progress }}</strong>
+          {% if stats.ratings_needed - stats.ratings_progress == 1 %}ocena{% else %}oceny{% endif %}
+          i Twój model osobisty zostanie zbudowany!
+        {% endif %}
+      </div>
+      <div class="progress mb-1" style="height:10px;border-radius:5px">
+        <div class="progress-bar bg-info progress-bar-striped progress-bar-animated"
+             style="width:{{ (stats.ratings_progress / stats.ratings_needed * 100)|int }}%">
+        </div>
+      </div>
+      <div class="d-flex justify-content-between text-muted" style="font-size:.75rem">
+        <span>{{ stats.ratings_progress }} / {{ stats.ratings_needed }} ocen</span>
+        <span>{% if stats.ratings_progress == stats.ratings_needed %}Trwa budowanie modelu…{% endif %}</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Zakładki -->
+<ul class="nav nav-tabs mb-3" id="mainTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-recs" type="button">
+      {% if is_cold_start %}
+        <i class="bi bi-fire me-1"></i>Popularne filmy
+      {% else %}
+        <i class="bi bi-stars me-1"></i>Rekomendacje modelu
+      {% endif %}
+      <span class="badge bg-{{ 'warning' if is_cold_start else 'success' }} ms-1">{{ recommendations|length }}</span>
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rated" type="button">
+      <i class="bi bi-bookmark-star me-1"></i>Ocenione filmy
+      <span class="badge bg-secondary ms-1">{{ rated_movies|length }}</span>
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rate" type="button" id="rateTabBtn">
+      <i class="bi bi-plus-circle me-1"></i>Oceń film
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content">
+
+  <!-- ── TAB 1: Rekomendacje ───────────────────────────────────────────── -->
+  <div class="tab-pane fade show active" id="tab-recs" role="tabpanel">
+    {% if recommendations %}
+    <div class="list-group shadow-sm">
+      {% for rec in recommendations %}
+      <div class="list-group-item list-group-item-action border-0 mb-1 rounded-2 px-3 py-2">
+        <div class="d-flex align-items-center gap-3">
+
+          <!-- Pozycja -->
+          <span class="badge bg-primary rounded-pill" style="min-width:2rem;text-align:center">
+            {{ loop.index }}
+          </span>
+
+          <!-- Tytuł + pasek dopasowania -->
+          <div class="flex-grow-1 min-w-0">
+            <div class="fw-semibold text-truncate">{{ rec.title }}</div>
+            <div class="d-flex align-items-center gap-2 mt-1">
+              <div class="progress flex-grow-1 score-bar">
+                <div class="progress-bar {{ 'bg-warning' if is_cold_start else 'bg-success' }}"
+                     style="width:{{ (rec.score * 100)|int }}%"></div>
+              </div>
+              <span class="text-muted small"
+                    title="{{ 'Popularność w społeczności' if is_cold_start else 'Dopasowanie do Twoich preferencji' }}">
+                {{ "%.0f"|format(rec.score * 100) }}%
+              </span>
+            </div>
+            {% if is_cold_start %}
+            <span class="badge bg-warning text-dark" style="font-size:.65rem">Popularny</span>
+            {% endif %}
+          </div>
+
+          <!-- Przycisk szybkiej oceny -->
+          <button class="btn btn-sm btn-outline-warning quick-rate-btn flex-shrink-0"
+                  data-movie-id="{{ rec.movieId }}"
+                  data-movie-title="{{ rec.title }}">
+            <i class="bi bi-star"></i><span class="d-none d-md-inline ms-1">Oceń</span>
+          </button>
+
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info border-0 shadow-sm">
+      <i class="bi bi-info-circle me-2"></i>
+      Brak rekomendacji – za mało ocen lub model nie mógł zostać wytrenowany.
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── TAB 2: Ocenione filmy ─────────────────────────────────────────── -->
+  <div class="tab-pane fade" id="tab-rated" role="tabpanel">
+    {% if rated_movies %}
+    <div class="table-responsive shadow-sm rounded-2">
+      <table class="table table-hover align-middle mb-0 bg-white">
+        <thead class="table-dark">
+          <tr>
+            <th>Film</th>
+            <th style="width:160px">Ocena</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in rated_movies %}
+          <tr>
+            <td class="fw-medium">{{ m.title }}</td>
+            <td>
+              <span class="star-rating text-warning">
+                {% set full = (m.rating | int) %}
+                {% set half = (m.rating - full) >= 0.5 %}
+                {% for i in range(full) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                {% if half %}<i class="bi bi-star-half"></i>{% endif %}
+              </span>
+              <span class="text-muted small ms-1">{{ m.rating }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info border-0 shadow-sm">
+      <i class="bi bi-info-circle me-2"></i>Użytkownik nie ocenił jeszcze żadnego filmu.
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── TAB 3: Oceń film ──────────────────────────────────────────────── -->
+  <div class="tab-pane fade" id="tab-rate" role="tabpanel">
+    <div class="row justify-content-center">
+      <div class="col-md-7 col-lg-5">
+        <div class="card border-0 shadow">
+          <div class="card-body p-4">
+            <h5 class="card-title mb-4">
+              <i class="bi bi-star-fill text-warning me-2"></i>Oceń nowy film
+            </h5>
+            <form method="POST" action="/user/{{ user_id }}/rate" class="rate-form" id="rateForm">
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Tytuł filmu</label>
+                <select name="movie_id" id="movieSelect" class="form-select" required>
+                  <option value=""></option>
+                  {% for m in unrated_movies %}
+                  <option value="{{ m.movieId }}">{{ m.title }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label fw-semibold d-flex justify-content-between">
+                  <span>Twoja ocena</span>
+                  <span class="text-primary fw-bold fs-5" id="ratingDisplay">3.5 ★</span>
+                </label>
+                <input type="range" class="form-range" name="rating" id="ratingSlider"
+                       min="0.5" max="5.0" step="0.5" value="3.5" />
+                <div class="d-flex justify-content-between text-muted small px-1 mt-1">
+                  <span>0.5 – Tragedia</span>
+                  <span>5.0 – Arcydzieło</span>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-success w-100 py-2" id="submitBtn">
+                <i class="bi bi-check-circle me-2"></i>Zapisz ocenę i douucz model
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tab-content -->
+
+<!-- ── Modal szybkiej oceny (z karty rekomendacji) ──────────────────────── -->
+<div class="modal fade" id="quickRateModal" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-dark text-white py-2 px-3">
+        <h6 class="modal-title"><i class="bi bi-star-fill text-warning me-2"></i>Oceń film</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/user/{{ user_id }}/rate" class="rate-form">
+        <div class="modal-body px-4 pt-3">
+          <input type="hidden" name="movie_id" id="qrMovieId" />
+          <p class="fw-semibold text-center mb-3" id="qrMovieTitle"></p>
+
+          <label class="form-label d-flex justify-content-between">
+            <span>Ocena</span>
+            <span class="text-primary fw-bold fs-5" id="qrRatingDisplay">3.5 ★</span>
+          </label>
+          <input type="range" class="form-range" name="rating" id="qrRatingSlider"
+                 min="0.5" max="5.0" step="0.5" value="3.5" />
+          <div class="d-flex justify-content-between text-muted small px-1">
+            <span>0.5</span><span>5.0</span>
+          </div>
+        </div>
+        <div class="modal-footer pt-0 px-4 pb-3 border-0">
+          <button type="submit" class="btn btn-success w-100">
+            <i class="bi bi-check-circle me-1"></i>Zapisz i douucz model
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function () {
+
+  // ── Select2: wyszukiwanie filmów ─────────────────────────────────────────
+  $('#movieSelect').select2({
+    theme: 'bootstrap-5',
+    placeholder: 'Wpisz tytuł lub fragment…',
+    allowClear: true,
+    width: '100%',
+  });
+
+  // ── Suwak oceny (formularz tab) ──────────────────────────────────────────
+  const slider = document.getElementById('ratingSlider');
+  const display = document.getElementById('ratingDisplay');
+  if (slider) {
+    slider.addEventListener('input', () => {
+      display.textContent = slider.value + ' ★';
+    });
+  }
+
+  // ── Suwak oceny (modal) ──────────────────────────────────────────────────
+  const qrSlider = document.getElementById('qrRatingSlider');
+  const qrDisplay = document.getElementById('qrRatingDisplay');
+  if (qrSlider) {
+    qrSlider.addEventListener('input', () => {
+      qrDisplay.textContent = qrSlider.value + ' ★';
+    });
+  }
+
+  // ── Przyciski "Oceń" na karcie rekomendacji → otwierają modal ───────────
+  document.querySelectorAll('.quick-rate-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('qrMovieId').value    = btn.dataset.movieId;
+      document.getElementById('qrMovieTitle').textContent = btn.dataset.movieTitle;
+      document.getElementById('qrRatingSlider').value    = '3.5';
+      document.getElementById('qrRatingDisplay').textContent = '3.5 ★';
+      new bootstrap.Modal(document.getElementById('quickRateModal')).show();
+    });
+  });
+
+  // ── Kliknięcie "Oceń film" z zakładki rekomendacji: filmId do formularza ─
+  // (opcjonalne – jeśli user kliknie "Oceń" z listy rec, przełącz na tab)
+  // Już obsługuje to modal powyżej – nic dodatkowego nie trzeba.
+
+  // ── Jeśli URL ma #rate-form, przełącz na tę zakładkę ────────────────────
+  if (window.location.hash === '#rate-form') {
+    document.getElementById('rateTabBtn').click();
+  }
+
+});
+</script>
+{% endblock %}

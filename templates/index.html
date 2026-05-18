@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}MovieLens – Wybierz użytkownika{% endblock %}
+
+{% block content %}
+<div class="row align-items-center mb-4">
+  <div class="col">
+    <h2 class="fw-bold mb-1"><i class="bi bi-people-fill text-primary me-2"></i>Wybierz użytkownika</h2>
+    <p class="text-muted mb-0">System obsługuje top-{{ users|length }} aktywnych użytkowników MovieLens.</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  {% for user in users %}
+  <div class="col-sm-6 col-md-4 col-lg-3">
+    <div class="card h-100 shadow-sm card-hover border-0">
+      <div class="card-body text-center py-4">
+
+        <div class="mb-3">
+          <span class="display-5 text-primary"><i class="bi bi-person-circle"></i></span>
+        </div>
+
+        <h5 class="card-title fw-bold mb-1">Użytkownik {{ user.id }}</h5>
+
+        <div class="row text-center g-2 mt-2 mb-3">
+          <div class="col-4">
+            <div class="bg-light rounded-2 py-2">
+              <div class="fw-bold text-dark">{{ user.rated_count }}</div>
+              <div class="text-muted" style="font-size:.7rem">OCENIONYCH</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="bg-success bg-opacity-10 rounded-2 py-2">
+              <div class="fw-bold text-success">{{ user.liked_count }}</div>
+              <div class="text-muted" style="font-size:.7rem">LUBI</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="bg-primary bg-opacity-10 rounded-2 py-2">
+              <div class="fw-bold text-primary">{{ user.rec_count }}</div>
+              <div class="text-muted" style="font-size:.7rem">PROPOZYCJI</div>
+            </div>
+          </div>
+        </div>
+
+        <a href="/user/{{ user.id }}" class="btn btn-primary w-100">
+          <i class="bi bi-arrow-right-circle me-1"></i>Otwórz profil
+        </a>
+
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- Nowy użytkownik -->
+  <div class="col-sm-6 col-md-4 col-lg-3">
+    <div class="card h-100 shadow-sm card-hover border-2 border-dashed border-secondary" style="border-style:dashed!important">
+      <div class="card-body text-center py-4 d-flex flex-column justify-content-center">
+        <div class="mb-3">
+          <span class="display-5 text-secondary"><i class="bi bi-person-plus-fill"></i></span>
+        </div>
+        <h5 class="card-title fw-bold mb-1 text-secondary">Nowy użytkownik</h5>
+        <p class="text-muted small mb-4">
+          Utwórz konto i zacznij oceniać filmy.<br>
+          Po {{ users[0].ratings_needed if users else 5 }} ocenach model nauczy się Twoich preferencji.
+        </p>
+        <form method="POST" action="/user/new" class="mt-auto">
+          <button type="submit" class="btn btn-outline-primary w-100">
+            <i class="bi bi-plus-circle me-1"></i>Utwórz profil
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

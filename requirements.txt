@@ -1,3 +1,5 @@
 ray[data]
 pyarrow
 pandas
+scikit-learn
+flask
