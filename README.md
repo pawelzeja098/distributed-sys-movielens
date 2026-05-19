@@ -56,3 +56,31 @@ graph TD
     C --> F
     D --> E
 ```
+
+```mermaid
+flowchart TD
+    subgraph Przygotowanie["Przygotowanie danych (jednorazowo)"]
+        A[data_import.py\nPobierz MovieLens] --> B[data_clean.py\nPrzetwórz → Parquet]
+        B --> C[(data/processed/\nratings.parquet\nmovies.parquet)]
+    end
+
+    subgraph Start["Uruchomienie serwera (app.py)"]
+        C --> D[init_system\nZaładuj dane + Ray]
+        D --> E[Zbuduj cechy filmów\ngatunki + PCA tagów]
+        E --> F[Trenuj modele per użytkownik\nDecisionTree via Ray remote]
+        F --> G[(data/models/\nmodel_<userId>.joblib)]
+    end
+
+    subgraph Web["Aplikacja Flask"]
+        H[Użytkownik\notwiera stronę] --> I{Ma model?}
+        I -- Tak --> J[get_recommendations\npredict_proba]
+        I -- Nie --> K[compute_popular_movies\nBayesian ranking]
+        J --> L[Wyświetl rekomendacje]
+        K --> L
+        L --> M[Użytkownik ocenia film]
+        M --> N[rate_and_retrain\nZapisz ocenę + przetrenuj Ray async]
+        N --> F
+    end
+
+    G --> I
+```
